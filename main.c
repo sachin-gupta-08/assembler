@@ -87,7 +87,17 @@ int loadcode(char progname[],int *locctr)
     return li;
 
 }
-
+void interfile(int n)
+{
+    int i=0;
+    FILE *f;
+    f=fopen("inter.txt","w");
+    for(i=0;i<n-1;i++)
+    {
+        fprintf(f,"%d %04X %s %s %s\n",l[i].lno,l[i].address,l[i].label,l[i].com,l[i].op);
+    }
+    fclose(f);
+}
 int Passone(int locctr,int li,int ol)
 {
     int i=0,start=locctr,ln,n,j=0,f=0,s=0,add;
@@ -95,7 +105,6 @@ int Passone(int locctr,int li,int ol)
     FILE *fl;
     fl=fopen("symtab.txt","w");
     fclose(fl);
-    printf("%d\n\n",li);
     for(i=0;i<li-1;i++)
     {
         l[i].address=locctr;
@@ -103,7 +112,7 @@ int Passone(int locctr,int li,int ol)
              locctr+=0;
         else if(strcmp(l[i].com,"WORD")==0)
             locctr+=3;
-        else if(strcmp(l[i].com,"BYTE")==0)
+        else if(strcmp(l[i].com,"HEX")==0)
         {
             ln=strlen(l[i].op);
             locctr+=ln;
@@ -120,14 +129,14 @@ int Passone(int locctr,int li,int ol)
         }
         else
             locctr+=3;
-        printf("%d %s %s %s\n",l[i].lno,l[i].label,l[i].com,l[i].op);
+       // printf("%d %s %s %s\n",l[i].lno,l[i].label,l[i].com,l[i].op);
 
     }
 
     for(i=0;i<li-1;i++)
     {
         //
-        if(strcmp(l[i].com,"START")!=0 && strcmp(l[i].com,"END")!=0 && strcmp(l[i].com,"RESW")!=0 && strcmp(l[i].com,"RESB")!=0 && strcmp(l[i].com,"BYTE")!=0 && strcmp(l[i].com,"RSUB")!=0 && strcmp(l[i].com,"WORD")!=0)
+        if(strcmp(l[i].com,"START")!=0 && strcmp(l[i].com,"END")!=0 && strcmp(l[i].com,"RESW")!=0 && strcmp(l[i].com,"RESB")!=0 && strcmp(l[i].com,"HEX")!=0 && strcmp(l[i].com,"RSUB")!=0 && strcmp(l[i].com,"WORD")!=0)
         {
             for(j=0;j<ol;j++)
             {
@@ -163,7 +172,6 @@ int Passone(int locctr,int li,int ol)
         if(s==0 && strcmp(l[i].label,".")!=0)
         {
             fl=fopen("symtab.txt","a");
-            printf("\n%s ",l[i].label);
             fprintf(fl,"%s ",l[i].label);
             fprintf(fl,"%X\n",l[i].address);
             fclose(fl);
@@ -177,5 +185,109 @@ int Passone(int locctr,int li,int ol)
         s=0;
     }
     interfile(li);
+    passtwo(li,ol);
+    return locctr;
 }
+void passtwo(int li,int ol)
+{
+    FILE *s,*O;
+    int i,f=0,oc,ln=0,num,j;
+    char c[25],add[10];
+    O=fopen("ob.txt","w");
+    for(i=0;i<li-1;i=i+1)
+    {
+        if(strcmp(l[i].com,"START")!=0 && strcmp(l[i].com,"END")!=0 && strcmp(l[i].com,"RESW")!=0 && strcmp(l[i].com,"RESB")!=0 && strcmp(l[i].com,"RSUB")!=0 )
+        {
+            s=fopen("symtab.txt","r");
 
+            while(!feof(s))
+            {
+                fscanf(s,"%s ",c);
+                fscanf(s,"%s\n",add);
+                if(strcmp(l[i].op,c)==0)
+                {
+                    f=1;
+
+                    break;
+                }
+                else
+                {
+                    f=0;
+                }
+            }
+            fclose(s);
+            if(f==1)
+                {
+                    f=0;
+                    if(strcmp(l[i].com,"WORD")!=0 && strcmp(l[i].com,"HEX")!=0)
+                    {
+                        for(j=0;j<ol;j++)
+                        {
+                            if(strcmp(l[i].com,o[j].mnem)==0)
+                            {
+                                f=1;
+                                break;
+                            }
+                            else
+                                f=0;
+                        }
+                        fclose(s);
+                        if(f==1)
+                        {
+                            fprintf(O,"%d%s ",o[j].code,add);
+                        }
+                        else
+                        {
+                            printf("\nInvalid Mnemonic %s in line %d",l[i].com,l[i].lno);
+                        }
+
+                    }
+                }
+                else if(strcmp(l[i].com,"HEX")==0)
+                {
+                    fprintf(O,"%s ",l[i].op);
+                }
+                else if(strcmp(l[i].com,"WORD")==0)
+                {
+                    num=atoi(l[i].op);
+                    fprintf(O,"%06X ",num);
+                }
+                else if(strcmp(l[i].com,"START")!=0 && strcmp(l[i].com,"END")!=0 && strcmp(l[i].com,"RESW")!=0 && strcmp(l[i].com,"RESB")!=0 && strcmp(l[i].com,"RSUB")!=0)
+                {
+                    printf("\nERROR:invalid operand!");
+                    printf("\n%s\n%d",l[i].op,l[i].lno);
+                    getch();
+                    exit(1);
+                }
+
+        }
+        if(strcmp(l[i].com,"RESW")==0 || strcmp(l[i].com,"RESB")==0)
+        {
+            fprintf(O,"-- ");
+        }
+        else if(strcmp(l[i].com,"RSUB")==0)
+        {
+            fprintf(O,"4C0000 ");
+        }
+        if(strcmp(l[i].com,"START")!=0 && strcmp(l[i].com,"END")!=0)
+            fprintf(O,"%X\n",l[i].address);
+        f=0;
+
+    }
+}
+int main()
+{
+    char progname[30];
+    int i=0,locctr,li=1,ol,end;
+    ol=optabcall();
+    printf("\nEnter the Input Program:");
+    gets(progname);
+    li=loadcode(progname,&locctr);
+    end=Passone(locctr,li,ol);
+    Text(li,locctr,end);
+    printf("\nObject Program is stored in OBJECT.txt\n\n");
+    read();
+    return 0;
+    getch();
+
+}
