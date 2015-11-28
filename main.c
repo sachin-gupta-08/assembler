@@ -275,6 +275,81 @@ void passtwo(int li,int ol)
 
     }
 }
+void Text(int li,int locctr,int end)
+{
+    FILE *o,*Re;
+    int ln=0,i=0,c=0;
+    char opj[25],a[30],st[200];
+    Re=fopen("OBJECT.txt","w");
+    fprintf(Re,"H^%s",l[0].label);
+    ln=strlen(l[0].label);
+    for(i=0;i<6-ln;i++)
+        fprintf(Re,"_");
+    fprintf(Re,"%06X^%06X",locctr,end-locctr+1);
+    strcpy(st,"");
+    fflush(stdin);
+    fflush(STDIN_FILENO);
+    o=fopen("ob.txt","r");
+    while(!feof(o))
+    {
+        c=0;
+        fscanf(o,"%s ",opj);
+        fscanf(o,"%s\n",a);
+        if(strcmp(opj,"--")!=0)
+        {
+            fprintf(Re,"\nT^%06s^",a);
+            strcat(st,"^");
+            strcat(st,opj);
+            ln=strlen(opj);
+            c+=ln/2;
+        }
+        while(!feof(o))
+        {
+            if(c>=30)
+            {
+                break;
+            }
+            fscanf(o,"%s ",opj);
+            fscanf(o,"%s\n",a);
+            if(strcmp(opj,"--")==0)
+                break;
+            strcat(st,"^");
+            strcat(st,opj);
+            ln=strlen(opj);
+            c+=ln/2;
+        }
+        if(c>0)
+        {
+            fprintf(Re,"%02X",c);
+            fprintf(Re,"%s",st);
+        }
+        strcpy(st,"");
+    }
+    fprintf(Re,"\n\nE^%s",l[0].label);
+    fclose(o);
+    fclose(Re);
+}
+int read()
+{
+    FILE *r;
+    int num;
+    r=fopen("OBJECT.txt","r");
+    if(r)
+    {
+        while(!feof(r))
+        {
+            while((num=getc(r))!=EOF)
+                putchar(num);
+            return 0;
+            fclose(r);
+        }
+
+    }
+    else
+        printf("\n\t\t File doesn't exist!!");
+
+
+}
 int main()
 {
     char progname[30];
